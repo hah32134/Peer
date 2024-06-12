@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message to Discord</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #444;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        #cooldownMessage {
+            font-size: 14px;
+            color: #999;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Send a Message</h1>
+        <input type="text" id="message" placeholder="Type your message here...">
+        <button id="confirmButton" onclick="sendMessage()">Confirm</button>
+        <p id="status"></p>
+        <p id="cooldownMessage"></p>
+    </div>
+
+    <script>
+        const webhookURL = "https://discord.com/api/webhooks/1250524800582029435/w35ry4lzRUpJNNaoyP6CUPEaBX6Y6tLjCHxyzckFWHobtabnII2mlWAlJOWI3JfUDyYK";
+        let cooldown = false;
+        let cooldownInterval;
+
+        function sendMessage() {
+            if (cooldown) {
+                displayStatus("Please wait a minute before sending another message.", "error");
+                return;
+            }
+
+            const message = document.getElementById("message").value.trim();
+            if (!message) return;
+
+            fetch(webhookURL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ content: message })
+            })
+            .then(response => {
+                if (response.ok) {
+                    displayStatus("Message sent successfully!", "success");
+                    document.getElementById("message").value = "";
+                    startCooldown();
+                } else {
+                    displayStatus("Failed to send message.", "error");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                displayStatus("Error sending message.", "error");
+            });
+        }
+
+        function startCooldown() {
+            cooldown = true;
+            document.getElementById("confirmButton").disabled = true;
+            const cooldownMessage = document.getElementById("cooldownMessage");
+            cooldownMessage.textContent = "Cooldown active. Please wait 1 minute.";
+            let secondsLeft = 60; // 60 seconds cooldown
+            cooldownInterval = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft <= 0) {
+                    clearInterval(cooldownInterval);
+                    cooldown = false;
+                    document.getElementById("confirmButton").disabled = false;
+                    cooldownMessage.textContent = "";
+                    displayStatus(""); // Clear status message
+                } else {
+                    cooldownMessage.textContent = `Cooldown active. ${secondsLeft} second(s) left.`;
+                }
+            }, 1000); // Update every second
+        }
+
+        function displayStatus(message, type) {
+            const statusElement = document.getElementById("status");
+            statusElement.textContent = message;
+            statusElement.style.color = type === "success" ? "green" : "red";
+        }
+    </script>
+</body>
+</html>
